@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { COLOR_OPTIONS, COLOR_SWATCHES } from '@/lib/utils/statusColors'
 import { updateColumn } from '@/lib/actions/column.actions'
-import type { Column, StatusOption } from '@/types/app'
+import type { Column, StatusOption, ColumnConfig } from '@/types/app'
 
 interface ColumnEditModalProps {
   open: boolean
@@ -35,7 +35,12 @@ export function ColumnEditModal({ open, column, listId, onClose, onUpdated }: Co
   const handleSave = async () => {
     setSaving(true)
     try {
-      const newConfig = hasOptions ? { options } : {}
+      let newConfig: ColumnConfig
+      if (hasOptions) {
+        newConfig = { options }
+      } else {
+        newConfig = {}
+      }
       await updateColumn(column.id, listId, { name, config: newConfig })
       onUpdated({ ...column, name, config: newConfig })
       onClose()

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { addColumn } from '@/lib/actions/column.actions'
 import { COLOR_OPTIONS, COLOR_SWATCHES } from '@/lib/utils/statusColors'
-import type { ColType, Column, StatusOption } from '@/types/app'
+import type { ColType, Column, StatusOption, ColumnConfig } from '@/types/app'
 
 const COL_TYPES: { value: ColType; label: string }[] = [
   { value: 'text',     label: 'Text' },
@@ -47,8 +47,13 @@ export function AddColumnButton({ listId, columnCount, onAdded }: AddColumnButto
     if (!name.trim()) return
     setSaving(true)
     try {
-      const config = hasOptions ? { options } : {}
-      const col = await addColumn(listId, name.trim(), colType, config, columnCount)
+      let config: ColumnConfig
+      if (hasOptions) {
+        config = { options }
+      } else {
+        config = {}
+      }
+      const col = await addColumn(listId, name.trim(), colType, config as any, columnCount)
       onAdded(col as Column)
       setName('')
       setColType('text')
