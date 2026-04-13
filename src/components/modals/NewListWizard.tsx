@@ -16,7 +16,12 @@ interface NewListWizardProps {
   profile: Profile
 }
 
-export function NewListWizard({ open, onClose, onCreated, profile }: NewListWizardProps) {
+export function NewListWizard({
+  open,
+  onClose,
+  onCreated,
+  profile,
+}: NewListWizardProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [listName, setListName] = useState('')
@@ -38,7 +43,9 @@ export function NewListWizard({ open, onClose, onCreated, profile }: NewListWiza
   const handleCreate = async () => {
     setCreating(true)
     try {
-      const list = await createList(listName.trim(), columns)
+      // ✅ FIX: enforce return type
+      const list: List = await createList(listName.trim(), columns)
+
       onCreated(list)
       reset()
       onClose()
@@ -63,10 +70,22 @@ export function NewListWizard({ open, onClose, onCreated, profile }: NewListWiza
               }}
             >
               {step > s ? (
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
-              ) : s}
+              ) : (
+                s
+              )}
             </div>
             <span className="text-xs text-white/40">
               {s === 1 ? 'Name' : s === 2 ? 'Columns' : 'Confirm'}
@@ -83,6 +102,7 @@ export function NewListWizard({ open, onClose, onCreated, profile }: NewListWiza
           onNext={() => setStep(2)}
         />
       )}
+
       {step === 2 && (
         <WizardStep2
           columns={columns}
@@ -91,6 +111,7 @@ export function NewListWizard({ open, onClose, onCreated, profile }: NewListWiza
           onNext={() => setStep(3)}
         />
       )}
+
       {step === 3 && (
         <WizardStep3
           listName={listName}
