@@ -97,11 +97,11 @@ export async function reorderColumns(
   await requireAdmin()
   const supabase = await createClient()
 
-  for (const [index, id] of orderedIds.entries()) {
+  for (let index = 0; index < orderedIds.length; index++) {
     await supabase
       .from('list_columns')
       .update({ position: index })
-      .eq('id', id)
+      .eq('id', orderedIds[index])
   }
 
   revalidatePath(`/list/${listId}`)
