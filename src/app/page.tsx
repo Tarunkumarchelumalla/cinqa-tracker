@@ -4,7 +4,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { Database } from '@/types/database'
 
-// ✅ DB types
+// ✅ Types
 type ListRow = Database['public']['Tables']['lists']['Row']
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
@@ -20,7 +20,7 @@ export default async function HomePage() {
   const [
     { data: firstListRaw },
     { data: allListsRaw },
-    { data: profile },
+    { data: profileRaw },
   ] = await Promise.all([
     supabase
       .from('lists')
@@ -41,18 +41,19 @@ export default async function HomePage() {
       .single(),
   ])
 
-  if (!profile) redirect('/login')
-
-  // ✅ Fix: explicit typing (prevents `never[]`)
+  // ✅ FIX ALL TYPES HERE
   const firstList = (firstListRaw ?? []) as Pick<ListRow, 'id'>[]
   const allLists = (allListsRaw ?? []) as ListRow[]
+  const profile = profileRaw as ProfileRow | null
+
+  if (!profile) redirect('/login')
 
   if (firstList.length > 0) {
     redirect(`/list/${firstList[0].id}`)
   }
 
   return (
-    <AppShell lists={allLists} profile={profile as ProfileRow}>
+    <AppShell lists={allLists} profile={profile}>
       <div className="flex h-full items-center justify-center">
         <EmptyState
           title="No lists yet"
