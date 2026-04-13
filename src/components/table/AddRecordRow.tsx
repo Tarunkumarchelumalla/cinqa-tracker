@@ -22,10 +22,9 @@ export function AddRecordRow({
   const handleAdd = async () => {
     setLoading(true)
     try {
-      // ✅ FIX: enforce type
-      const record: RecordWithValues = await addRecord(listId, recordCount)
-
-      onAdded({ ...record, values: record.values ?? {} })
+      const row = await addRecord(listId, recordCount)
+      const record: RecordWithValues = { ...row, values: {} }
+      onAdded(record)
     } finally {
       setLoading(false)
     }
