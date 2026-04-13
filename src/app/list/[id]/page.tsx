@@ -33,7 +33,7 @@ export default async function ListPage({ params }: { params: { id: string } }) {
   if (!profile) redirect('/login')
   if (!list) redirect('/')
 
-  const columns: Column[] = (columnsRaw ?? []).map((c: Database['public']['Tables']['list_columns']['Row']) => ({
+  const columns: Column[] = (columnsRaw ?? []).map((c:any) => ({
     id: c.id,
     list_id: c.list_id,
     name: c.name,
