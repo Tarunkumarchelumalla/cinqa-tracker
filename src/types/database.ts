@@ -28,6 +28,7 @@ export interface Database {
           role?: 'admin' | 'viewer'
           created_at?: string
         }
+        Relationships: []
       }
       lists: {
         Row: {
@@ -51,6 +52,7 @@ export interface Database {
           created_at?: string
           is_active?: boolean
         }
+        Relationships: []
       }
       list_columns: {
         Row: {
@@ -80,6 +82,7 @@ export interface Database {
           position?: number
           created_at?: string
         }
+        Relationships: []
       }
       list_records: {
         Row: {
@@ -100,6 +103,7 @@ export interface Database {
           position?: number
           created_at?: string
         }
+        Relationships: []
       }
       record_values: {
         Row: {
@@ -120,13 +124,17 @@ export interface Database {
           column_id?: string
           value?: string | null
         }
+        Relationships: []
       }
     }
+    Views: Record<string, never>
     Functions: {
       get_my_role: {
         Args: Record<string, never>
         Returns: string
       }
     }
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
