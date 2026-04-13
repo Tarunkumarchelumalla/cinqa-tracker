@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { DraftColumn } from '@/types/app'
-import type { Database } from '@/types/database'
+import type { Database, Json } from '@/types/database'
 
 type ListRow = Database['public']['Tables']['lists']['Row']
 type SupabaseTyped = Awaited<ReturnType<typeof createClient>>
@@ -40,7 +40,7 @@ export async function createList(name: string, columns: DraftColumn[]): Promise<
         list_id: (list as ListRow).id,
         name: col.name,
         col_type: col.col_type,
-        config: col.config,
+        config: col.config as unknown as Json,
         position: i,
       }))
     )

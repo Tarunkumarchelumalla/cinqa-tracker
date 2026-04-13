@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { ColumnConfig, ColType } from '@/types/app'
-import type { Database } from '@/types/database'
+import type { Database, Json } from '@/types/database'
 
 type ColumnRow = Database['public']['Tables']['list_columns']['Row']
 type SupabaseTyped = Awaited<ReturnType<typeof createClient>>
@@ -42,7 +42,7 @@ export async function addColumn(
       list_id: listId,
       name,
       col_type: colType,
-      config,
+      config: config as unknown as Json,
       position,
     })
     .select()
@@ -64,7 +64,12 @@ export async function updateColumn(
 
   const { error } = await supabase
     .from('list_columns')
-    .update(updates)
+    .update({
+      ...updates,
+      ...(updates.config !== undefined
+        ? { config: updates.config as unknown as Json }
+        : {}),
+    })
     .eq('id', columnId)
 
   if (error) throw new Error(error.message)
