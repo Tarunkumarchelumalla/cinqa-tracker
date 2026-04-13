@@ -4,11 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { DraftColumn } from '@/types/app'
 import type { Database } from '@/types/database'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 type ListRow = Database['public']['Tables']['lists']['Row']
+type SupabaseTyped = Awaited<ReturnType<typeof createClient>>
 
-async function requireAdmin(): Promise<SupabaseClient<Database>> {
+async function requireAdmin(): Promise<SupabaseTyped> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')

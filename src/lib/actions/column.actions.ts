@@ -4,19 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { ColumnConfig, ColType } from '@/types/app'
 import type { Database } from '@/types/database'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
-// ✅ Types
 type ColumnRow = Database['public']['Tables']['list_columns']['Row']
-type ProfileRole = Pick<Database['public']['Tables']['profiles']['Row'], 'role'>
+type SupabaseTyped = Awaited<ReturnType<typeof createClient>>
 
-async function requireAdmin(): Promise<SupabaseClient<Database>> {
+async function requireAdmin(): Promise<SupabaseTyped> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
   const { data: profile } = await supabase
@@ -25,8 +20,7 @@ async function requireAdmin(): Promise<SupabaseClient<Database>> {
     .eq('id', user.id)
     .single()
 
-  // ✅ Type-safe check
-  if ((profile as ProfileRole | null)?.role !== 'admin') {
+  if ((profile as { role: string } | null)?.role !== 'admin') {
     throw new Error('Forbidden')
   }
 
@@ -100,17 +94,11 @@ export async function reorderColumns(
 ): Promise<void> {
   const supabase = await requireAdmin()
 
-  const updates = orderedIds.map((id, position) => ({
-    id,
-    list_id: listId,
-    position,
-  }))
-
-  for (const update of updates) {
+  for (const [index, id] of orderedIds.entries()) {
     await supabase
       .from('list_columns')
-      .update({ position: update.position })
-      .eq('id', update.id)
+      .update({ position: index })
+      .eq('id', id)
   }
 
   revalidatePath(`/list/${listId}`)
