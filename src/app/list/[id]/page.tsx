@@ -43,7 +43,7 @@ export default async function ListPage({ params }: { params: { id: string } }) {
     created_at: c.created_at,
   }))
 
-  const records: RecordWithValues[] = (recordsRaw ?? []).map((r) => ({
+  const records: RecordWithValues[] = (recordsRaw ?? []).map((r:any) => ({
     id: r.id,
     list_id: r.list_id,
     position: r.position,
