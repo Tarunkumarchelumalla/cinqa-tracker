@@ -6,25 +6,19 @@ import type { ColumnConfig, ColType } from '@/types/app'
 import type { Database, Json } from '@/types/database'
 
 type ColumnRow = Database['public']['Tables']['list_columns']['Row']
-type SupabaseTyped = Awaited<ReturnType<typeof createClient>>
 
-async function requireAdmin(): Promise<SupabaseTyped> {
+async function requireAdmin(): Promise<void> {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
-
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
-
   if ((profile as { role: string } | null)?.role !== 'admin') {
     throw new Error('Forbidden')
   }
-
-  return supabase
 }
 
 export async function addColumn(
@@ -34,7 +28,8 @@ export async function addColumn(
   config: ColumnConfig,
   position: number
 ): Promise<ColumnRow> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('list_columns')
@@ -49,9 +44,7 @@ export async function addColumn(
     .single()
 
   if (error) throw new Error(error.message)
-
   revalidatePath(`/list/${listId}`)
-
   return data as ColumnRow
 }
 
@@ -60,20 +53,24 @@ export async function updateColumn(
   listId: string,
   updates: { name?: string; config?: ColumnConfig; col_type?: ColType }
 ): Promise<void> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
+
+  const payload: {
+    name?: string
+    col_type?: ColType
+    config?: Json
+  } = {}
+  if (updates.name !== undefined) payload.name = updates.name
+  if (updates.col_type !== undefined) payload.col_type = updates.col_type
+  if (updates.config !== undefined) payload.config = updates.config as unknown as Json
 
   const { error } = await supabase
     .from('list_columns')
-    .update({
-      ...updates,
-      ...(updates.config !== undefined
-        ? { config: updates.config as unknown as Json }
-        : {}),
-    })
+    .update(payload)
     .eq('id', columnId)
 
   if (error) throw new Error(error.message)
-
   revalidatePath(`/list/${listId}`)
 }
 
@@ -81,7 +78,8 @@ export async function deleteColumn(
   columnId: string,
   listId: string
 ): Promise<void> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
 
   const { error } = await supabase
     .from('list_columns')
@@ -89,7 +87,6 @@ export async function deleteColumn(
     .eq('id', columnId)
 
   if (error) throw new Error(error.message)
-
   revalidatePath(`/list/${listId}`)
 }
 
@@ -97,7 +94,8 @@ export async function reorderColumns(
   listId: string,
   orderedIds: string[]
 ): Promise<void> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
 
   for (const [index, id] of orderedIds.entries()) {
     await supabase

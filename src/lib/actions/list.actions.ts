@@ -6,9 +6,8 @@ import type { DraftColumn } from '@/types/app'
 import type { Database, Json } from '@/types/database'
 
 type ListRow = Database['public']['Tables']['lists']['Row']
-type SupabaseTyped = Awaited<ReturnType<typeof createClient>>
 
-async function requireAdmin(): Promise<SupabaseTyped> {
+async function requireAdmin(): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
@@ -18,12 +17,11 @@ async function requireAdmin(): Promise<SupabaseTyped> {
     .eq('id', user.id)
     .single()
   if ((profile as { role: string } | null)?.role !== 'admin') throw new Error('Forbidden')
-  return supabase
 }
 
 export async function createList(name: string, columns: DraftColumn[]): Promise<ListRow> {
-  const supabase = await requireAdmin()
-
+  await requireAdmin()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data: list, error: listError } = await supabase
@@ -52,7 +50,8 @@ export async function createList(name: string, columns: DraftColumn[]): Promise<
 }
 
 export async function hideList(listId: string): Promise<void> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
   const { error } = await supabase
     .from('lists')
     .update({ is_active: false })
@@ -62,7 +61,8 @@ export async function hideList(listId: string): Promise<void> {
 }
 
 export async function restoreList(listId: string): Promise<void> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
   const { error } = await supabase
     .from('lists')
     .update({ is_active: true })
@@ -72,7 +72,8 @@ export async function restoreList(listId: string): Promise<void> {
 }
 
 export async function deleteList(listId: string): Promise<void> {
-  const supabase = await requireAdmin()
+  await requireAdmin()
+  const supabase = await createClient()
   const { error } = await supabase.from('lists').delete().eq('id', listId)
   if (error) throw new Error(error.message)
   revalidatePath('/')
