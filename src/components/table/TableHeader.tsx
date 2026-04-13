@@ -3,6 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ColumnOptionsMenu } from '@/components/column/ColumnOptionsMenu'
+import { AddColumnButton } from '@/components/column/AddColumnButton'
 import type { Column } from '@/types/app'
 
 // Fixed pixel widths per column type
@@ -80,9 +81,17 @@ interface TableHeaderProps {
   isAdmin: boolean
   onColumnUpdated: (updated: Column) => void
   onColumnDeleted: (columnId: string) => void
+  onColumnAdded: (col: Column) => void
 }
 
-export function TableHeader({ columns, listId, isAdmin, onColumnUpdated, onColumnDeleted }: TableHeaderProps) {
+export function TableHeader({
+  columns,
+  listId,
+  isAdmin,
+  onColumnUpdated,
+  onColumnDeleted,
+  onColumnAdded,
+}: TableHeaderProps) {
   return (
     <thead className="sticky top-0 z-10">
       <tr className="border-b border-white/[0.08]">
@@ -96,6 +105,13 @@ export function TableHeader({ columns, listId, isAdmin, onColumnUpdated, onColum
             onColumnDeleted={onColumnDeleted}
           />
         ))}
+        {isAdmin && (
+          <AddColumnButton
+            listId={listId}
+            columnCount={columns.length}
+            onAdded={onColumnAdded}
+          />
+        )}
       </tr>
     </thead>
   )

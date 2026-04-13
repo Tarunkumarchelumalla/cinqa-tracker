@@ -4,12 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { ColumnConfig, ColType } from '@/types/app'
 import type { Database } from '@/types/database'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // ✅ Types
 type ColumnRow = Database['public']['Tables']['list_columns']['Row']
 type ProfileRole = Pick<Database['public']['Tables']['profiles']['Row'], 'role'>
 
-async function requireAdmin() {
+async function requireAdmin(): Promise<SupabaseClient<Database>> {
   const supabase = await createClient()
 
   const {
@@ -18,16 +19,16 @@ async function requireAdmin() {
 
   if (!user) throw new Error('Unauthorized')
 
-  const { data: profileRaw } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  // ✅ FIX: type it
-  const profile = profileRaw as ProfileRole | null
-
-  if (profile?.role !== 'admin') throw new Error('Forbidden')
+  // ✅ Type-safe check
+  if ((profile as ProfileRole | null)?.role !== 'admin') {
+    throw new Error('Forbidden')
+  }
 
   return supabase
 }
@@ -57,7 +58,6 @@ export async function addColumn(
 
   revalidatePath(`/list/${listId}`)
 
-  // ✅ ensure return type
   return data as ColumnRow
 }
 

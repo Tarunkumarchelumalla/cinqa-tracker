@@ -1,7 +1,7 @@
 import type { Database } from './database'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
-export type List = Database['public']['Tables']['lists']['Row'] & { is_active: boolean }
+export type List = Database['public']['Tables']['lists']['Row']
 export type ListRecord = Database['public']['Tables']['list_records']['Row']
 export type RecordValue = Database['public']['Tables']['record_values']['Row']
 

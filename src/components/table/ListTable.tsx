@@ -62,6 +62,10 @@ export function ListTable({ list, initialColumns, initialRecords, profile }: Lis
     setColumns((prev) => prev.filter((c) => c.id !== columnId))
   }, [setColumns])
 
+  const handleColumnAdded = useCallback((col: Column) => {
+    setColumns((prev) => [...prev, col])
+  }, [setColumns])
+
   return (
     <div className="flex h-full flex-col">
       {/* Top toolbar */}
@@ -112,6 +116,7 @@ export function ListTable({ list, initialColumns, initialRecords, profile }: Lis
                   isAdmin={isAdmin}
                   onColumnUpdated={handleColumnUpdated}
                   onColumnDeleted={handleColumnDeleted}
+                  onColumnAdded={handleColumnAdded}
                 />
                 <tbody>
                   {records.map((record) => (
