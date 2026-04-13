@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ListTable } from '@/components/table/ListTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import type { Column, RecordWithValues } from '@/types/app'
+import type { Database } from '@/types/database'
 
 export default async function ListPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -32,7 +33,7 @@ export default async function ListPage({ params }: { params: { id: string } }) {
   if (!profile) redirect('/login')
   if (!list) redirect('/')
 
-  const columns: Column[] = (columnsRaw ?? []).map((c) => ({
+  const columns: Column[] = (columnsRaw ?? []).map((c: Database['public']['Tables']['list_columns']['Row']) => ({
     id: c.id,
     list_id: c.list_id,
     name: c.name,
