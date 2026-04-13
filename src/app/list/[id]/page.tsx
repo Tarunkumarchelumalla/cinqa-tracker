@@ -33,8 +33,13 @@ export default async function ListPage({ params }: { params: { id: string } }) {
   if (!list) redirect('/')
 
   const columns: Column[] = (columnsRaw ?? []).map((c) => ({
-    ...c,
+    id: c.id,
+    list_id: c.list_id,
+    name: c.name,
+    col_type: c.col_type,
     config: (c.config ?? {}) as Column['config'],
+    position: c.position,
+    created_at: c.created_at,
   }))
 
   const records: RecordWithValues[] = (recordsRaw ?? []).map((r) => ({
