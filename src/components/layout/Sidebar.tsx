@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
-import { hideList, restoreList } from '@/lib/actions/list.actions'
+import { hideList, restoreList, renameList } from '@/lib/actions/list.actions'
+import { useListNames } from '@/lib/context/ListNamesContext'
 import type { List, Profile } from '@/types/app'
 
 interface SidebarProps {
@@ -21,12 +22,17 @@ interface ListItemProps {
   isAdmin: boolean
   onHide: (id: string) => void
   onRestore: (id: string) => void
+  onRename: (id: string, name: string) => void
   onClick: () => void
 }
 
-function ListItem({ list, active, isAdmin, onHide, onRestore, onClick }: ListItemProps) {
+function ListItem({ list, active, isAdmin, onHide, onRestore, onRename, onClick }: ListItemProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [draft, setDraft] = useState(list.name)
+  const committingRef = useRef(false)
+  const { setName } = useListNames()
 
   const handleHide = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -47,8 +53,29 @@ function ListItem({ list, active, isAdmin, onHide, onRestore, onClick }: ListIte
     setLoading(false)
   }
 
+  const commitRename = async () => {
+    if (committingRef.current) return
+    committingRef.current = true
+    const trimmed = draft.trim()
+    if (!trimmed || trimmed === list.name) {
+      setDraft(list.name)
+      setRenaming(false)
+      committingRef.current = false
+      return
+    }
+    setLoading(true)
+    try {
+      await renameList(list.id, trimmed)
+      onRename(list.id, trimmed)
+      setName(list.id, trimmed)
+    } finally {
+      setLoading(false)
+      setRenaming(false)
+      committingRef.current = false
+    }
+  }
+
   if (!list.is_active) {
-    // Archived list item — simpler, just name + restore button
     return (
       <div className="group flex items-center gap-2 rounded-md px-2 py-1.5 opacity-50 hover:opacity-100 transition-opacity">
         <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-semibold uppercase" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)' }}>
@@ -80,23 +107,44 @@ function ListItem({ list, active, isAdmin, onHide, onRestore, onClick }: ListIte
 
   return (
     <div className="group relative">
-      <Link
-        href={`/list/${list.id}`}
-        onClick={onClick}
-        className={cn(
-          'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors pr-7',
-          active ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
-        )}
-      >
-        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-semibold uppercase"
-          style={{ background: 'rgba(26,107,255,0.15)', color: '#5B9BFF' }}>
-          {list.name.charAt(0)}
-        </span>
-        <span className="truncate">{list.name}</span>
-      </Link>
+      {renaming ? (
+        <div className="flex items-center gap-2 rounded-md px-2 py-1.5 bg-white/[0.05]">
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-semibold uppercase"
+            style={{ background: 'rgba(26,107,255,0.15)', color: '#5B9BFF' }}>
+            {draft.charAt(0) || list.name.charAt(0)}
+          </span>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); commitRename() }
+              if (e.key === 'Escape') { setDraft(list.name); setRenaming(false) }
+            }}
+            onBlur={commitRename}
+            disabled={loading}
+            className="flex-1 min-w-0 bg-transparent text-sm text-white outline-none border-b border-[#1A6BFF]/50 focus:border-[#1A6BFF] disabled:opacity-50"
+          />
+        </div>
+      ) : (
+        <Link
+          href={`/list/${list.id}`}
+          onClick={onClick}
+          className={cn(
+            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors pr-7',
+            active ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+          )}
+        >
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-semibold uppercase"
+            style={{ background: 'rgba(26,107,255,0.15)', color: '#5B9BFF' }}>
+            {list.name.charAt(0)}
+          </span>
+          <span className="truncate">{list.name}</span>
+        </Link>
+      )}
 
       {/* ··· menu — admin only, shows on hover */}
-      {isAdmin && (
+      {isAdmin && !renaming && (
         <div className="absolute right-1 top-1/2 -translate-y-1/2">
           <button
             onClick={(e) => { e.preventDefault(); setMenuOpen(!menuOpen) }}
@@ -114,6 +162,20 @@ function ListItem({ list, active, isAdmin, onHide, onRestore, onClick }: ListIte
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
               <div className="absolute left-0 top-full z-40 mt-1 w-40 rounded-lg border border-white/[0.08] bg-[#0D1220] py-1 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setMenuOpen(false)
+                    setDraft(list.name)
+                    setRenaming(true)
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white/60 transition-colors hover:bg-white/[0.05] hover:text-white"
+                >
+                  <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                  </svg>
+                  Rename
+                </button>
                 <button
                   onClick={handleHide}
                   disabled={loading}
@@ -146,12 +208,15 @@ export function Sidebar({ lists, profile, onNewList }: SidebarProps) {
 
   const handleHide = (id: string) => {
     setLocalLists((prev) => prev.map((l) => l.id === id ? { ...l, is_active: false } : l))
-    // If currently viewing the hidden list, redirect to home
     if (pathname === `/list/${id}`) router.push('/')
   }
 
   const handleRestore = (id: string) => {
     setLocalLists((prev) => prev.map((l) => l.id === id ? { ...l, is_active: true } : l))
+  }
+
+  const handleRename = (id: string, name: string) => {
+    setLocalLists((prev) => prev.map((l) => l.id === id ? { ...l, name } : l))
   }
 
   const handleSignOut = async () => {
@@ -201,6 +266,7 @@ export function Sidebar({ lists, profile, onNewList }: SidebarProps) {
                 isAdmin={isAdmin}
                 onHide={handleHide}
                 onRestore={handleRestore}
+                onRename={handleRename}
                 onClick={() => setMobileOpen(false)}
               />
             ))
@@ -232,6 +298,7 @@ export function Sidebar({ lists, profile, onNewList }: SidebarProps) {
                     isAdmin={isAdmin}
                     onHide={handleHide}
                     onRestore={handleRestore}
+                    onRename={handleRename}
                     onClick={() => setMobileOpen(false)}
                   />
                 ))}

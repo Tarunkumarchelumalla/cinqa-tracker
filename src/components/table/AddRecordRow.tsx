@@ -32,7 +32,7 @@ export function AddRecordRow({
 
   return (
     <tr className="border-b border-white/[0.05]">
-      <td colSpan={columns.length}>
+      <td colSpan={columns.length + 1}>
         <button
           onClick={handleAdd}
           disabled={loading}

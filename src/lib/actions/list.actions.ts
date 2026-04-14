@@ -78,3 +78,17 @@ export async function deleteList(listId: string): Promise<void> {
   if (error) throw new Error(error.message)
   revalidatePath('/')
 }
+
+export async function renameList(listId: string, name: string): Promise<void> {
+  await requireAdmin()
+  const supabase = await createClient()
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('Name cannot be empty')
+  const { error } = await supabase
+    .from('lists')
+    .update({ name: trimmed })
+    .eq('id', listId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/')
+  revalidatePath(`/list/${listId}`)
+}

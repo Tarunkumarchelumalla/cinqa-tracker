@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { NewListWizard } from '@/components/modals/NewListWizard'
+import { ListNamesProvider } from '@/lib/context/ListNamesContext'
 import type { List, Profile } from '@/types/app'
 
 interface AppShellProps {
@@ -20,26 +21,28 @@ export function AppShell({ lists, profile, children }: AppShellProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#060B18]">
-      <Sidebar
-        lists={localLists}
-        profile={profile}
-        onNewList={() => setWizardOpen(true)}
-      />
-
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-
-      {profile.role === 'admin' && (
-        <NewListWizard
-          open={wizardOpen}
-          onClose={() => setWizardOpen(false)}
-          onCreated={handleListCreated}
+    <ListNamesProvider initialLists={localLists}>
+      <div className="flex h-screen overflow-hidden bg-[#060B18]">
+        <Sidebar
+          lists={localLists}
           profile={profile}
-          existingLists={localLists}
+          onNewList={() => setWizardOpen(true)}
         />
-      )}
-    </div>
+
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+
+        {profile.role === 'admin' && (
+          <NewListWizard
+            open={wizardOpen}
+            onClose={() => setWizardOpen(false)}
+            onCreated={handleListCreated}
+            profile={profile}
+            existingLists={localLists}
+          />
+        )}
+      </div>
+    </ListNamesProvider>
   )
 }
