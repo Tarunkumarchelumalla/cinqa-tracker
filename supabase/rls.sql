@@ -1,6 +1,7 @@
 -- ============================================================
 -- CINQA TRACKER — ROW LEVEL SECURITY POLICIES
 -- Run AFTER schema.sql in Supabase Studio > SQL Editor
+-- Roles: viewer (read-only), editor (edit cell values), admin (full access)
 -- ============================================================
 
 -- Enable RLS on all tables
@@ -102,6 +103,8 @@ create policy "list_columns: admin delete"
 
 -- ============================================================
 -- LIST_RECORDS
+-- admin: full CRUD
+-- editor/viewer: SELECT only (editors cannot add/delete rows)
 -- ============================================================
 drop policy if exists "list_records: authenticated read" on list_records;
 create policy "list_records: authenticated read"
@@ -110,10 +113,11 @@ create policy "list_records: authenticated read"
   using (true);
 
 drop policy if exists "list_records: authenticated insert" on list_records;
-create policy "list_records: authenticated insert"
+drop policy if exists "list_records: admin insert" on list_records;
+create policy "list_records: admin insert"
   on list_records for insert
   to authenticated
-  with check (true);
+  with check (public.get_my_role() = 'admin');
 
 drop policy if exists "list_records: admin delete" on list_records;
 create policy "list_records: admin delete"
@@ -123,6 +127,8 @@ create policy "list_records: admin delete"
 
 -- ============================================================
 -- RECORD_VALUES
+-- admin + editor: can insert/update (edit cell values)
+-- viewer: SELECT only
 -- ============================================================
 drop policy if exists "record_values: authenticated read" on record_values;
 create policy "record_values: authenticated read"
@@ -131,16 +137,18 @@ create policy "record_values: authenticated read"
   using (true);
 
 drop policy if exists "record_values: authenticated insert" on record_values;
-create policy "record_values: authenticated insert"
+drop policy if exists "record_values: editor+ insert" on record_values;
+create policy "record_values: editor+ insert"
   on record_values for insert
   to authenticated
-  with check (true);
+  with check (public.get_my_role() in ('admin', 'editor'));
 
 drop policy if exists "record_values: authenticated update" on record_values;
-create policy "record_values: authenticated update"
+drop policy if exists "record_values: editor+ update" on record_values;
+create policy "record_values: editor+ update"
   on record_values for update
   to authenticated
-  using (true);
+  using (public.get_my_role() in ('admin', 'editor'));
 
 drop policy if exists "record_values: admin delete" on record_values;
 create policy "record_values: admin delete"

@@ -74,6 +74,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
                       className="rounded-md border border-white/10 bg-[#0A0F1E] px-2 py-1 text-sm text-white/80 focus:border-[#1A6BFF] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="viewer">Viewer</option>
+                      <option value="editor">Editor</option>
                       <option value="admin">Admin</option>
                     </select>
                   </td>

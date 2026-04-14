@@ -9,7 +9,7 @@ export interface Database {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: 'admin' | 'viewer'
+          role: 'admin' | 'editor' | 'viewer'
           created_at: string
         }
         Insert: {

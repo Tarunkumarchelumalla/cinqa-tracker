@@ -9,7 +9,7 @@ create table if not exists profiles (
   email text unique not null,
   full_name text,
   avatar_url text,
-  role text default 'viewer' check (role in ('admin', 'viewer')),
+  role text default 'viewer' check (role in ('admin', 'editor', 'viewer')),
   created_at timestamptz default now()
 );
 

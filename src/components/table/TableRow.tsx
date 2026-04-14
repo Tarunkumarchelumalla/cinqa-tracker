@@ -13,9 +13,10 @@ interface TableRowProps {
   onValueChange: (recordId: string, columnId: string, value: string) => void
   onDelete: (recordId: string) => void
   isAdmin: boolean
+  canEdit: boolean
 }
 
-export function TableRow({ record, columns, listId, onValueChange, onDelete, isAdmin }: TableRowProps) {
+export function TableRow({ record, columns, listId, onValueChange, onDelete, isAdmin, canEdit }: TableRowProps) {
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
@@ -57,6 +58,7 @@ export function TableRow({ record, columns, listId, onValueChange, onDelete, isA
                 column={col}
                 value={record.values[col.id] ?? ''}
                 onChange={(val) => onValueChange(record.id, col.id, val)}
+                readOnly={!canEdit}
               />
             </div>
           </td>

@@ -17,9 +17,9 @@ export async function updateUserRole(targetUserId: string, newRole: UserRole): P
 
   if ((profile as { role: string } | null)?.role !== 'admin') throw new Error('Forbidden')
 
-  // Cannot demote yourself
-  if (targetUserId === user.id && newRole !== 'admin') {
-    throw new Error('Cannot demote yourself')
+  // Cannot change your own role
+  if (targetUserId === user.id) {
+    throw new Error('Cannot change your own role')
   }
 
   const { error } = await supabase

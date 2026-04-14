@@ -34,6 +34,7 @@ interface ListTableProps {
 
 export function ListTable({ list, initialColumns, initialRecords, profile }: ListTableProps) {
   const isAdmin = profile.role === 'admin'
+  const canEdit = profile.role === 'admin' || profile.role === 'editor'
   const { records, columns, setColumns, handleValueChange, addRecord, removeRecord } =
     useListRecords(list.id, initialRecords, initialColumns)
 
@@ -128,14 +129,17 @@ export function ListTable({ list, initialColumns, initialRecords, profile }: Lis
                       onValueChange={handleValueChange}
                       onDelete={removeRecord}
                       isAdmin={isAdmin}
+                      canEdit={canEdit}
                     />
                   ))}
-                  <AddRecordRow
-                    listId={list.id}
-                    columns={columns}
-                    recordCount={records.length}
-                    onAdded={addRecord}
-                  />
+                  {isAdmin && (
+                    <AddRecordRow
+                      listId={list.id}
+                      columns={columns}
+                      recordCount={records.length}
+                      onAdded={addRecord}
+                    />
+                  )}
                 </tbody>
               </table>
             </SortableContext>

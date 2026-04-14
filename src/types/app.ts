@@ -48,4 +48,4 @@ export interface DraftColumn {
   position: number
 }
 
-export type UserRole = 'admin' | 'viewer'
+export type UserRole = 'admin' | 'editor' | 'viewer'

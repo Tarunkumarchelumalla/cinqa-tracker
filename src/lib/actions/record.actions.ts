@@ -11,6 +11,13 @@ export async function addRecord(listId: string, position: number): Promise<Recor
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if ((profile as { role: string } | null)?.role !== 'admin') throw new Error('Forbidden')
+
   const { data, error } = await supabase
     .from('list_records')
     .insert({ list_id: listId, position })
