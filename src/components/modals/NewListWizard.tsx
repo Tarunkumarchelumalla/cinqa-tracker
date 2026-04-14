@@ -14,6 +14,7 @@ interface NewListWizardProps {
   onClose: () => void
   onCreated: (list: List) => void
   profile: Profile
+  existingLists: List[]
 }
 
 export function NewListWizard({
@@ -21,6 +22,7 @@ export function NewListWizard({
   onClose,
   onCreated,
   profile,
+  existingLists,
 }: NewListWizardProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -43,9 +45,7 @@ export function NewListWizard({
   const handleCreate = async () => {
     setCreating(true)
     try {
-      // ✅ FIX: enforce return type
       const list: List = await createList(listName.trim(), columns)
-
       onCreated(list)
       reset()
       onClose()
@@ -70,18 +70,8 @@ export function NewListWizard({
               }}
             >
               {step > s ? (
-                <svg
-                  className="h-3 w-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={3}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
                 s
@@ -106,6 +96,7 @@ export function NewListWizard({
       {step === 2 && (
         <WizardStep2
           columns={columns}
+          existingLists={existingLists}
           onChange={setColumns}
           onBack={() => setStep(1)}
           onNext={() => setStep(3)}

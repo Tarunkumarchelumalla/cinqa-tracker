@@ -37,6 +37,7 @@ export function AppShell({ lists, profile, children }: AppShellProps) {
           onClose={() => setWizardOpen(false)}
           onCreated={handleListCreated}
           profile={profile}
+          existingLists={localLists}
         />
       )}
     </div>

@@ -1,5 +1,7 @@
 'use server'
 
+// NOTE: getListColumns is exported below for public (authenticated) use
+
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { ColumnConfig, ColType } from '@/types/app'
@@ -105,4 +107,21 @@ export async function reorderColumns(
   }
 
   revalidatePath(`/list/${listId}`)
+}
+
+// ── Public (authenticated) ─────────────────────────────────
+// Reads columns for any list — used by the wizard copy feature.
+export async function getListColumns(listId: string): Promise<ColumnRow[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data, error } = await supabase
+    .from('list_columns')
+    .select('*')
+    .eq('list_id', listId)
+    .order('position')
+
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ColumnRow[]
 }

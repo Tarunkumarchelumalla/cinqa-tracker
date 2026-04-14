@@ -20,7 +20,8 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/Button'
 import { COLOR_OPTIONS, COLOR_SWATCHES } from '@/lib/utils/statusColors'
-import type { DraftColumn, ColType, StatusOption } from '@/types/app'
+import { getListColumns } from '@/lib/actions/column.actions'
+import type { DraftColumn, ColType, StatusOption, List } from '@/types/app'
 
 const COL_TYPES: { value: ColType; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -68,7 +69,6 @@ function SortableColumnRow({ col, onChange, onRemove }: ColumnRowProps) {
   return (
     <div ref={setNodeRef} style={style} className="rounded-lg border border-white/[0.06] bg-[#0A0F1E]">
       <div className="flex items-center gap-2 p-3">
-        {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
@@ -121,7 +121,6 @@ function SortableColumnRow({ col, onChange, onRemove }: ColumnRowProps) {
         </button>
       </div>
 
-      {/* Options editor */}
       {hasOptions && configOpen && (
         <div className="border-t border-white/[0.06] p-3 space-y-2">
           {options.map((opt, i) => (
@@ -169,14 +168,16 @@ function SortableColumnRow({ col, onChange, onRemove }: ColumnRowProps) {
   )
 }
 
+// ── Step 2 ───────────────────────────────────────────────────
 interface WizardStep2Props {
   columns: DraftColumn[]
+  existingLists: List[]
   onChange: (columns: DraftColumn[]) => void
   onBack: () => void
   onNext: () => void
 }
 
-export function WizardStep2({ columns, onChange, onBack, onNext }: WizardStep2Props) {
+export function WizardStep2({ columns, existingLists, onChange, onBack, onNext }: WizardStep2Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -208,14 +209,29 @@ export function WizardStep2({ columns, onChange, onBack, onNext }: WizardStep2Pr
     onChange(arrayMove(columns, oldIndex, newIndex).map((c, i) => ({ ...c, position: i })))
   }
 
+  const handleCopy = (copied: DraftColumn[], mode: 'replace' | 'append' = 'replace') => {
+    if (mode === 'append') {
+      const offset = columns.length
+      onChange([
+        ...columns,
+        ...copied.map((c, i) => ({ ...c, position: offset + i })),
+      ])
+    } else {
+      onChange(copied)
+    }
+  }
+
   return (
     <div className="p-6">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-white">Define columns</h2>
-        <p className="mt-1 text-sm text-white/40">Add and configure the columns for this list.</p>
+        <p className="mt-1 text-sm text-white/40">Add columns manually or copy them from an existing list.</p>
       </div>
 
-      <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+      {/* Copy from existing list */}
+      <CopyFromListConnected existingLists={existingLists} onCopy={handleCopy} />
+
+      <div className="max-h-[40vh] space-y-2 overflow-y-auto pr-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={columns.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             {columns.map((col) => (
@@ -249,6 +265,112 @@ export function WizardStep2({ columns, onChange, onBack, onNext }: WizardStep2Pr
           </svg>
         </Button>
       </div>
+    </div>
+  )
+}
+
+// Wrapper to thread the mode state from CopyFromList into the parent's handleCopy
+function CopyFromListConnected({
+  existingLists,
+  onCopy,
+}: {
+  existingLists: List[]
+  onCopy: (cols: DraftColumn[], mode: 'replace' | 'append') => void
+}) {
+  const [selectedId, setSelectedId] = useState('')
+  const [mode, setMode] = useState<'replace' | 'append'>('replace')
+  const [loading, setLoading] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  const activeLists = existingLists.filter((l) => l.is_active)
+  if (activeLists.length === 0) return null
+
+  const handleCopy = async () => {
+    if (!selectedId) return
+    setLoading(true)
+    try {
+      const rows = await getListColumns(selectedId)
+      const drafts: DraftColumn[] = rows.map((r, i) => ({
+        id: generateId(),
+        name: r.name,
+        col_type: r.col_type as ColType,
+        config: (r.config ?? {}) as DraftColumn['config'],
+        position: i,
+      }))
+      onCopy(drafts, mode)
+      setOpen(false)
+      setSelectedId('')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-xs text-[#5B9BFF] hover:text-white/60 transition-colors"
+      >
+        <svg
+          className={`h-3 w-3 transition-transform ${open ? 'rotate-90' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        Copy columns from an existing list
+      </button>
+
+      {open && (
+        <div className="mt-2.5 rounded-lg border border-[#1A6BFF]/30 bg-[#1A6BFF]/5 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="flex-1 rounded-md border border-white/10 bg-[#060B18] px-2.5 py-1.5 text-sm text-white/80 focus:border-[#1A6BFF] focus:outline-none"
+            >
+              <option value="">— select a list —</option>
+              {activeLists.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+
+            <div className="flex rounded-md border border-white/10 overflow-hidden text-xs">
+              <button
+                onClick={() => setMode('replace')}
+                className={`px-2.5 py-1.5 transition-colors ${
+                  mode === 'replace' ? 'bg-[#1A6BFF] text-white' : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                Replace
+              </button>
+              <button
+                onClick={() => setMode('append')}
+                className={`px-2.5 py-1.5 transition-colors ${
+                  mode === 'append' ? 'bg-[#1A6BFF] text-white' : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                Append
+              </button>
+            </div>
+
+            <button
+              onClick={handleCopy}
+              disabled={!selectedId || loading}
+              className="rounded-md bg-[#1A6BFF] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Loading…' : 'Apply'}
+            </button>
+          </div>
+          <p className="text-xs text-white/30">
+            {mode === 'replace'
+              ? "Replaces any columns you've added so far with the selected list's columns."
+              : "Appends the selected list's columns after your current columns."}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
