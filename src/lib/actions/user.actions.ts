@@ -24,7 +24,7 @@ export async function updateUserRole(targetUserId: string, newRole: UserRole): P
 
   const { error } = await supabase
     .from('profiles')
-    .update({ role: newRole })
+    .update({ role: newRole as any })
     .eq('id', targetUserId)
 
   if (error) throw new Error(error.message)
